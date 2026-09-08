@@ -281,7 +281,11 @@ async function cloudRequest(method,body,cfg=getSyncConfig()){
   let res;
   try{res=await fetch('/api/state',opts)}catch(e){throw new Error('Shared-data service could not be reached')}
   let payload=null;
-  try{payload=await res.json()}catch(e){throw new Error('Shared-data service returned an invalid response')}
+  try{payload=await res.json()}catch(e){
+    let raw=''; try{raw=await res.clone().text()}catch(_){}
+    const ct=res.headers.get('content-type')||'unknown content-type';
+    throw new Error(`Shared-data API is not returning JSON (${res.status}, ${ct}). This usually means the Cloudflare API worker was not deployed. Open /api/health to check it.`)
+  }
   if(!res.ok||!payload||payload.ok===false)throw new Error((payload&&payload.error)||`Shared-data request failed (${res.status})`);
   return payload;
 }
